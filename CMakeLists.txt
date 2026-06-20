@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015 Pavlo Lavrenenko
+# Copyright (c) 2016 Alibek Omarov
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,133 +19,411 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-
 cmake_minimum_required(VERSION 3.0.0)
+project(XASH_ENGINE C)
 
-# Install custom module path
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+set(XASH_ENGINE xash) # Lib name
 
-# Must be specified before to check if we are targeting 64 bit
-option(XASH_64BIT "Enable experimental 64-bit build. Note that you must also provide 64-bit game binaries" OFF) # Enable 64-bit build of Xash3D FWGS Engine.
+fwgs_fix_default_msvc_settings()
 
-if(NOT XASH_64BIT)
-	include(VSForceXPToolchain) # Force XP toolchain for Visual Studio
+# Явно указываем все исходные файлы вместо GLOB_RECURSE
+set(XASH_ENGINE_SOURCES
+    # Client sources
+    client/cl_cmds.c
+    client/cl_demo.c
+    client/cl_events.c
+    client/cl_frame.c
+    client/cl_game.c
+    client/cl_main.c
+    client/cl_menu.c
+    client/cl_mobile.c
+    client/cl_parse.c
+    client/cl_pmove.c
+    client/cl_remap.c
+    client/cl_scrn.c
+    client/cl_tent.c
+    client/cl_video.c
+    client/cl_view.c
+    client/cl_netgraph.c
+    client/gl_backend.c
+    client/gl_beams.c
+    client/gl_cull.c
+    client/gl_decals.c
+    client/gl_draw.c
+    client/gl_image.c
+    client/gl_mirror.c
+    client/gl_refrag.c
+    client/gl_rlight.c
+    client/gl_rmain.c
+    client/gl_rmath.c
+    client/gl_rmisc.c
+    client/gl_rpart.c
+    client/gl_rsurf.c
+    client/gl_rstrobe.c
+    client/gl_sprite.c
+    client/gl_studio.c
+    client/vid_common.c
+    client/gl_warp.c
+    client/joyinput.c
+    client/input.c
+    client/keys.c
+    client/input_evdevkey.c
+    client/console.c
+    client/touch.c
+    client/gamma.c
+    client/s_dsp.c
+    client/s_load.c
+    client/s_main.c
+    client/s_mix.c
+    client/s_mouth.c
+    client/s_stream.c
+    client/s_utils.c
+    client/s_vox.c
+    client/vgui/vgui_draw.c
+    client/imagelib/img_bmp.c
+    client/imagelib/img_main.c
+    client/imagelib/img_quant.c
+    client/imagelib/img_tga.c
+    client/imagelib/img_utils.c
+    client/imagelib/img_wad.c
+    client/imagelib/img_dds.c
+    
+    # Common sources
+    common/avikit.c
+    common/build.c
+    common/base_cmd.c
+    common/cfgscript.c
+    common/cmd.c
+    common/common.c
+    common/con_utils.c
+    common/crclib.c
+    common/crtlib.c
+    common/cvar.c
+    common/filesystem.c
+    common/host.c
+    common/hpak.c
+    common/infostring.c
+    common/identification.c
+    common/library.c
+    common/masterlist.c
+    common/mathlib.c
+    common/matrixlib.c
+    common/mod_studio.c
+    common/model.c
+    common/net_buffer.c
+    common/net_chan.c
+    common/net_encode.c
+    common/net_huff.c
+    common/net_http.c
+    common/network.c
+    common/pm_surface.c
+    common/pm_trace.c
+    common/random.c
+    common/sys_con.c
+    common/system.c
+    common/titles.c
+    common/world.c
+    common/zone.c
+    common/sequence.c
+    common/soundlib/snd_main.c
+    common/soundlib/snd_mp3.c
+    common/soundlib/snd_utils.c
+    common/soundlib/snd_wav.c
+    common/soundlib/libmpg/dct36.c
+    common/soundlib/libmpg/dct64.c
+    common/soundlib/libmpg/format.c
+    common/soundlib/libmpg/frame.c
+    common/soundlib/libmpg/index.c
+    common/soundlib/libmpg/layer3.c
+    common/soundlib/libmpg/libmpg.c
+    common/soundlib/libmpg/mpg123.c
+    common/soundlib/libmpg/parse.c
+    common/soundlib/libmpg/reader.c
+    common/soundlib/libmpg/synth.c
+    common/soundlib/libmpg/tabinit.c
+    
+    # Server sources
+    server/sv_client.c
+    server/sv_cmds.c
+    server/sv_custom.c
+    server/sv_direct.c
+    server/sv_frame.c
+    server/sv_filter.c
+    server/sv_game.c
+    server/sv_init.c
+    server/sv_main.c
+    server/sv_log.c
+    server/sv_move.c
+    server/sv_phys.c
+    server/sv_pmove.c
+    server/sv_save.c
+    server/sv_world.c
+)
+
+# Platform-specific sources
+set(XASH_ENGINE_WIN32_SOURCES
+    ../game_launch/game.rc
+    platform/win32/con_win32.c
+    platform/win32/sys_win.c
+)
+
+set(XASH_ENGINE_SDL_SOURCES
+    platform/sdl/sys_sdl.c
+    platform/sdl/vid_sdl.c
+)
+
+set(XASH_ENGINE_POSIX_SOURCES
+    platform/posix/con_posix.c
+    platform/posix/sys_posix.c
+)
+
+set(XASH_ENGINE_STUB_SOURCES
+    platform/stub/sys_stub.c
+    platform/stub/con_stub.c
+)
+
+set(XASH_ENGINE_ANDROID_SOURCES
+    platform/android/android_nosdl.c
+    platform/android/vid_android.c
+    platform/android/snd_opensles.c
+    platform/android/dlsym-weak.cpp
+)
+
+if(NOT WIN32 AND NOT APPLE)
+	find_package (Libunwind QUIET)
 endif()
 
-project(XASH3D)
+if(LIBUNWIND_FOUND AND UNIX AND NOT APPLE)
+	message(STATUS "libunwind found")
+	include_directories(${LIBUNWIND_INCLUDE_DIRS})
+	list(APPEND XASH_ENGINE_POSIX_SOURCES platform/posix/crashhandler_libunwind.c)
+elseif(UNIX)
+	message(STATUS "libunwind not found")
+	list(APPEND XASH_ENGINE_POSIX_SOURCES platform/posix/crashhandler.c)
+	set(LIBUNWIND_INCLUDE_DIR "")
+	set(LIBUNWIND_LIBRARIES "")
+elseif(NOT WIN32)
+#	file(GLOB XASH_ENGINE_POSIX_SOURCES platform/stub/crashhandler.c)
+endif()
 
-include(FWGSLib)
-include(CMakeDependentOption)
-include(CPack)
+cond_list_append(WIN32        XASH_ENGINE_SOURCES XASH_ENGINE_WIN32_SOURCES)
+cond_list_append(UNIX        XASH_ENGINE_SOURCES XASH_ENGINE_POSIX_SOURCES)
+cond_list_append("NOT UNIX AND NOT WIN32"        XASH_ENGINE_SOURCES XASH_ENGINE_STUB_SOURCES)
+cond_list_append(XASH_SDL     XASH_ENGINE_SOURCES XASH_ENGINE_SDL_SOURCES)
+cond_list_append(ANDROID      XASH_ENGINE_SOURCES XASH_ENGINE_ANDROID_SOURCES)
+cond_list_append("NOT XASH_DEDICATED" XASH_ENGINE_SOURCES XASH_ENGINE_CLIENT_SOURCES)
 
-#--------------
-# USER DEFINES \
-################\
+# Проверка что источники найдены
+if(NOT XASH_ENGINE_SOURCES)
+    message(FATAL_ERROR "XASH_ENGINE_SOURCES is empty! No source files were added to the build.")
+endif()
 
-set (XASH3D_VERSION 0.19.4)
+message(STATUS "XASH_ENGINE_SOURCES count: ${XASH_ENGINE_SOURCES}")
 
-option(XASH_DEDICATED "Enable dedicated build. Servers must choose this." OFF) # Servers must choose this
+include_directories(
+        ${CMAKE_CURRENT_BINARY_DIR}
+	.
+	common/
+	common/imagelib/
+	common/soundlib/
+	client/
+	client/vgui/
+	server/
+	../common
+	../pm_shared
+)
 
-# Windows only. Enable it by default for Windows.
-cmake_dependent_option(XASH_NONSTANDARD_LOAD "Enable own DLL loader in Windows." ON "WIN32" OFF)
+if(XASH_NANOGL)
+	file(GLOB_RECURSE XASH_ENGINE_GLESWRAP_SOURCES ${XASH_NANOGL_SRC}/*.cpp) # NanoGL version
+	if(NOT XASH_ENGINE_GLESWRAP_SOURCES)
+		message(FATAL_ERROR "Clone both nanogl sources to engine folder!")
+	endif()
+	list(APPEND XASH_ENGINE_SOURCES ${XASH_ENGINE_GLESWRAP_SOURCES})
 
-# POSIX only. Disable it by default for Windows
-cmake_dependent_option(XASH_USE_SELECT "Enable reading console commands from stdin." ON "NOT WIN32" OFF)
-cmake_dependent_option(XASH_LIBDL "Enable libdl use. POSIX only." ON "NOT WIN32" OFF)
+	include_directories(${XASH_NANOGL_SRC}/ ${XASH_NANOGL_SRC}/GL/)
+	add_definitions(-DXASH_NANOGL -D__MULTITEXTURE_SUPPORT__)
+elseif(XASH_WES)
+	file(GLOB XASH_ENGINE_GLESWRAP_SOURCES ${XASH_WES_SRC}/src/*.c) # wesgl version
+	if(NOT XASH_ENGINE_GLESWRAP_SOURCES)
+		message(FATAL_ERROR "Clone both gl-wes-v2 and nanogl sources to engine folder!")
+	endif()
+	list(APPEND XASH_ENGINE_SOURCES ${XASH_ENGINE_GLESWRAP_SOURCES})
 
-# Disable for Windows and 64Bit
-cmake_dependent_option(XASH_DLL_LOADER "Enable DLL loading on x86 Linux/*nix." OFF "NOT WIN32 AND NOT XASH_64BIT" OFF)
+	include_directories(${XASH_NANOGL_SRC}/ ${XASH_NANOGL_SRC}/GL/ ${XASH_WES_SRC}/src/)
+	add_definitions(-DXASH_WES)
+endif()
 
-option(XASH_GLES   "Enable if Xash3D is running over GL to GLES translator." OFF)
-option(XASH_NANOGL "Use NanoGL(GLES1). Implicitly enables XASH_GLES." OFF)
-option(XASH_WES    "Use gl-wes-v2(GLES2). Implicitly enables XASH_GLES." OFF)
-fwgs_string_option(XASH_NANOGL_SRC "NanoGL source path" "nanogl")
-fwgs_string_option(XASH_WES_SRC "gl-wes-v2 source path" "gl-wes-v2")
-option(XASH_SAILFISH "Build for Sailfish OS. Implicitly enables XASH_WES, XASH_GLES." OFF)
-option(XASH_STATIC "Static build. Implicitly enables XASH_SINGLE_BINARY." OFF)
-option(XASH_NO_ASYNC_NS_RESOLVE "Disable asynchronous domain name resolving." OFF)
+if(UNIX)
+    add_definitions(-DXASH_DYNAMIC_DLADDR)
+endif()
 
-option(XASH_VECTORIZE_SINCOS "Try to use vectorized versions of sin(), cos() and sincos()" ON)
+add_definitions(-DXASH_FORCEINLINE)
 
-# Desktop or dedicated version options
-if(XASH_DEDICATED) 
-	option(XASH_SDL "Enable SDL." OFF) # Dedicated servers still can use SDL
-	option(XASH_SINGLE_BINARY "Don't build game launcher and build engine as executable" ON)
-	set(XASH_VGUI OFF)   # But these dedicated can't use at all, so hardcode it as disabled
-	set(XASH_MAINUI OFF) # But these dedicated can't use at all, so hardcode it as disabled
+# Important, as HLSDK and engine shares some symbol names!
+if(NOT WIN32) # Windows by default have hidden visibility and better linker
+	fwgs_add_compile_options(C -fvisibility=hidden)
+endif()
+
+# ----- Conditions -----
+
+if(XASH_VECTORIZE_SINCOS) # I know what I am doing and I want to build version that requires SSE
+	add_definitions(-DVECTORIZE_SINCOS)
+endif()
+
+if(XASH_SINGLE_BINARY) # Set executable or library
+	add_definitions(-DSINGLE_BINARY)
+	add_executable(${XASH_ENGINE} ${XASH_ENGINE_SOURCES})
+	if(MSVC)
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
+	endif()
 else()
-	option(XASH_SDL "Enable SDL." ON)
-	option(XASH_SINGLE_BINARY "Don't build game launcher and build engine as executable" OFF)
-	cmake_dependent_option(XASH_VGUI "Enable VGUI support." ON "NOT XASH_64BIT" OFF)
-	option(XASH_MAINUI "Build mainui library" OFF) # CHANGED: Set to OFF by default
+	add_library(${XASH_ENGINE} SHARED ${XASH_ENGINE_SOURCES})
 endif()
 
-# Misc
-option(XASH_USE_STB_SPRINTF "Use stb_sprintf implementation for sprintf" ON)
-option(XASH_NO_INSTALL_RUNSCRIPT "Don't install xash3d.sh" OFF)
-option(XASH_NO_INSTALL_VGUI_BIN "Don't bundle proprietary VGUI" OFF)
-if(WIN32) # Autodownload for lazy developers using Windows
-	option(XASH_DOWNLOAD_DEPENDENCIES "Download dependencies automatically, if supported" ON)
+if(LIBUNWIND_FOUND)
+	target_link_libraries(${XASH_ENGINE} ${LIBUNWIND_LIBRARIES})
+endif()
+
+if(MSVC)
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
+endif()
+
+if(WIN32 AND NOT XASH_64BIT)
+	add_definitions(-DDBGHELP) # dbghelp crashhandler
+	if(MINGW)
+		target_link_libraries(${XASH_ENGINE} -luser32 -lkernel32 -lgdi32 -lws2_32 -ldbghelp -lpsapi)
+	elseif(MSVC)
+		target_link_libraries(${XASH_ENGINE} user32.lib kernel32.lib gdi32.lib Ws2_32.lib dbghelp.lib psapi.lib)
+	endif()
 else()
-	option(XASH_DOWNLOAD_DEPENDENCIES "Download dependencies automatically, if supported" OFF)
+	if(XASH_USE_SELECT)
+		add_definitions(-DUSE_SELECT)
+	endif()
+        if(MINGW)
+                target_link_libraries(${XASH_ENGINE} -luser32 -lkernel32 -lgdi32 -lws2_32)
+        elseif(MSVC)
+                target_link_libraries(${XASH_ENGINE} user32.lib kernel32.lib gdi32.lib Ws2_32.lib)
+        endif()
 endif()
 
-# Installing
-if(WIN32)
-	fwgs_string_option(LIB_INSTALL_DIR "Libraries install directory" ${CMAKE_BINARY_DIR})
-	fwgs_string_option(LIB_INSTALL_SUBDIR "Libraries install subdirectory" "")
-	fwgs_string_option(BIN_INSTALL_DIR "Executables install directory" ${CMAKE_BINARY_DIR})
-else()
-	fwgs_string_option(LIB_INSTALL_DIR "Libraries install directory" "lib")
-	fwgs_string_option(LIB_INSTALL_SUBDIR "Libraries install subdirectory" "xash3d")
-	fwgs_string_option(BIN_INSTALL_DIR "Executables install directory" "bin")
+if(LINUX)
+	add_definitions(-DGDB_BREAK)
 endif()
 
-
-if(NOT XASH_64BIT AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-	message(FATAL_ERROR "You're building 64 bit Xash3D! Note that there is almost no games compiled for 64-bit. Please, set CMake to build for 32 system. If you still want 64bit build, pass -DXASH_64BIT=ON to CMake configuration step.")
-endif()
-if(NOT XASH_LIBDL AND NOT XASH_DLL_LOADER AND NOT XASH_NONSTANDARD_LOAD)
-	message(FATAL_ERROR "You must enable XASH_LIBDL, XASH_DLL_LOADER or both. Otherwise engine is useless.")
+if(NOT XASH_64BIT AND NOT MSVC)
+	add_definitions(-DXASH_FASTSTR)
 endif()
 
-if(XASH_64BIT)
-	message(STATUS "Building for 64 Bit")
-else()
-	message(STATUS "Building for 32 Bit")
+if(XASH_NONSTANDARD_LOAD)
+	add_definitions(-DXASH_NONSTANDARD_LOAD)
 endif()
 
+if(XASH_DEDICATED)
+	add_definitions(-DXASH_DEDICATED)
+	if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" AND NOT XASH_SDL)
+		target_link_libraries(${XASH_ENGINE} -lrt)
+	endif()
+endif()
 
-# Dependencies
-if(XASH_STATIC)
-	set(XASH_SINGLE_BINARY ON)
+if(XASH_SDL)
+	set(SDL2_BUILDING_EXECUTABLE ${XASH_SINGLE_BINARY}) # link sdl2main, if needed
+	xash_link_sdl2(${XASH_ENGINE})
+	add_definitions(-DXASH_SDL)
+	if(MSVC)
+		string(REGEX REPLACE "lib$" "dll" SDL2_DLL "${SDL2_LIBRARY}")
+		foreach(path IN LISTS SDL2_DLL)
+			# Keep the path that ends with .dll
+			if(path MATCHES ".*\\.dll$")
+				set(SDL2_DLL "${path}")
+			endif()
+		endforeach()
+		install(FILES ${SDL2_DLL}
+			CONFIGURATIONS Debug
+			DESTINATION ${LIB_INSTALL_DIR}/Debug/)
+		install(FILES ${SDL2_DLL}
+			CONFIGURATIONS Release
+			DESTINATION ${LIB_INSTALL_DIR}/Release/)
+	endif()
+endif()
+
+if(XASH_GLES)
+	add_definitions(-DXASH_GLES -DXASH_GL_STATIC)
 endif()
 
 if(XASH_SAILFISH)
-	set(XASH_WES ON)
+	add_definitions(-D__SAILFISH__)
 endif()
 
-if(XASH_NANOGL OR XASH_WES)
-	set(XASH_GLES ON)
+if(XASH_DLL_LOADER)
+	add_definitions(-DDLL_LOADER)
+
+	include_directories(../loader)
+
+	# See target_link_vgui_hack
+
+	# Not needed anymore, loader is static always
+	# add_custom_command(TARGET ${XASH_ENGINE} PRE_LINK COMMAND
+	#    ${CMAKE_COMMAND} -E copy $<TARGET_FILE:loader> $<TARGET_FILE_DIR:${XASH_ENGINE}>)
+
+	target_link_libraries(${XASH_ENGINE} loader)
 endif()
 
-fwgs_conditional_subproject(XASH_MAINUI mainui)
-fwgs_conditional_subproject("NOT XASH_64BIT AND XASH_VGUI" vgui_support)
-fwgs_conditional_subproject("NOT XASH_64BIT AND XASH_DLL_LOADER" loader)
-fwgs_conditional_subproject("NOT XASH_SINGLE_BINARY" game_launch)
-add_subdirectory(engine)
-
-if(NOT (WIN32 OR XASH_NO_INSTALL_RUNSCRIPT))
-	install(FILES "scripts/xash3d.sh"
-		DESTINATION "${BIN_INSTALL_DIR}"
-	    RENAME "xash3d"
-		PERMISSIONS OWNER_READ OWNER_EXECUTE OWNER_WRITE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+if(XASH_LIBDL)
+	target_link_libraries(${XASH_ENGINE} ${CMAKE_DL_LIBS})
+else()
+	add_definitions(-DNO_LIBDL)
 endif()
 
-if(WIN32)
-	if(XASH_SINGLE_BINARY)
-		set_property(DIRECTORY . PROPERTY VS_STARTUP_PROJECT xash) # Engine project
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+	add_definitions(-D_DEBUG)
+endif()
+
+if(XASH_RELEASE)
+	add_definitions(-DXASH_RELEASE)
+else()
+	execute_process(COMMAND "git" "rev-parse" "--short" "HEAD"
+		WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+		OUTPUT_VARIABLE SHORT_HASH
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+	if(SHORT_HASH)
+		message(STATUS "git hash: ${SHORT_HASH}")
+		add_definitions(-DXASH_BUILD_COMMIT="${SHORT_HASH}")
 	else()
-		set_property(DIRECTORY . PROPERTY VS_STARTUP_PROJECT xash3d) # Game_launch project
+		message(AUTHOR_WARNING "git hash: not set")
 	endif()
 endif()
+
+if(XASH_NO_ASYNC_NS_RESOLVE)
+	add_definitions(-DXASH_NO_ASYNC_NS_RESOLVE)
+endif()
+
+if(XASH_USE_STB_SPRINTF)
+	add_definitions(-DXASH_USE_STB_SPRINTF)
+endif()
+
+fwgs_set_default_properties(${XASH_ENGINE})
+
+if(NOT WIN32)
+	if(NOT HAIKU)
+		target_link_libraries(${XASH_ENGINE} -lm -lpthread)
+	else()
+		target_link_libraries(${XASH_ENGINE} -lm -lpthread -lnetwork)
+	endif()
+	# For single binary builds we change name to game_launch's executable name
+	if(XASH_SINGLE_BINARY)
+		set_target_properties(${XASH_ENGINE} PROPERTIES
+			    OUTPUT_NAME "xash3d")
+	endif()
+else()
+	# For Win32 we have split DLL names
+	if(XASH_DEDICATED)
+		set_target_properties(${XASH_ENGINE} PROPERTIES
+			OUTPUT_NAME "xash_dedicated")
+	else()
+		set_target_properties(${XASH_ENGINE} PROPERTIES
+			OUTPUT_NAME "xash_sdl")
+	endif()
+endif()
+
+fwgs_install(${XASH_ENGINE})
