@@ -99,7 +99,8 @@ jobs:
         run: |
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DXASH_DEDICATED=OFF
+            -DXASH_DEDICATED=OFF \
+            -DXASH_64BIT=1
 
       - name: Build
         run: cmake --build build --parallel $(nproc)
