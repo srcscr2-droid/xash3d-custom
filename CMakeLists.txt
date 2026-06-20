@@ -77,7 +77,7 @@ else()
 	option(XASH_SDL "Enable SDL." ON)
 	option(XASH_SINGLE_BINARY "Don't build game launcher and build engine as executable" OFF)
 	cmake_dependent_option(XASH_VGUI "Enable VGUI support." ON "NOT XASH_64BIT" OFF)
-	option(XASH_MAINUI "Build mainui library" ON) # Totally not recommended to disable
+	option(XASH_MAINUI "Build mainui library" OFF) # CHANGED: Set to OFF by default
 endif()
 
 # Misc
@@ -103,7 +103,7 @@ endif()
 
 
 if(NOT XASH_64BIT AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-	message(FATAL_ERROR "You're building 64 bit Xash3D! Note that there is almost no games compiled for 64-bit. Please, set CMake to build for 32 system. If you still want 64bit build, pass -DXASH_64BIT=1 to CMake")
+	message(FATAL_ERROR "You're building 64 bit Xash3D! Note that there is almost no games compiled for 64-bit. Please, set CMake to build for 32 system. If you still want 64bit build, pass -DXASH_64BIT=ON to CMake configuration step.")
 endif()
 if(NOT XASH_LIBDL AND NOT XASH_DLL_LOADER AND NOT XASH_NONSTANDARD_LOAD)
 	message(FATAL_ERROR "You must enable XASH_LIBDL, XASH_DLL_LOADER or both. Otherwise engine is useless.")
