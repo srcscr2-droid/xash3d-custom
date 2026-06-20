@@ -81,7 +81,11 @@ macro(fwgs_conditional_subproject cond subproject)
 		endif()
     endforeach()
 	if(TEMP)
-		add_subdirectory(${subproject})
+		if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${subproject}")
+			add_subdirectory(${subproject})
+		else()
+			message(WARNING "Conditional subproject directory not found: ${subproject}")
+		endif()
 	endif()
 endmacro()
 
@@ -353,12 +357,12 @@ set(archdetect_c_code "
     #error cmake_ARCH i386
 #elif defined(__riscv)
     #if __riscv_xlen == 64
-        #error cmake_ARCH riscv64
-    #elif __riscv_xlen == 32
-        #error cmake_ARCH riscv32
-    #else
-        #error Unknown RISC-V ABI
-    #endif
+         #error cmake_ARCH riscv64
+     #elif __riscv_xlen == 32
+         #error cmake_ARCH riscv32
+     #else
+         #error Unknown RISC-V ABI
+     #endif
 #elif defined(__x86_64) || defined(__x86_64__) || defined(__amd64) || defined(_M_X64)
     #error cmake_ARCH x86_64
 #elif defined(__ia64) || defined(__ia64__) || defined(_M_IA64)
