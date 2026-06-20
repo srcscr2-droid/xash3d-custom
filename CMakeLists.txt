@@ -27,13 +27,14 @@ include(cmake/FWGSLib.cmake)
 
 set(XASH_ENGINE xash) # Lib name
 
-file(GLOB_RECURSE XASH_ENGINE_SOURCES         common/*.c server/*.c ) # Minimal sources
-file(GLOB_RECURSE XASH_ENGINE_WIN32_SOURCES   ../game_launch/game.rc platform/win32/*.c) # Win32 only sources
-file(GLOB_RECURSE XASH_ENGINE_SDL_SOURCES     platform/sdl/*.c) # SDL version sources
-file(GLOB_RECURSE XASH_ENGINE_POSIX_SOURCES    platform/posix/con_posix.c) # Posix sources
-file(GLOB_RECURSE XASH_ENGINE_STUB_SOURCES     platform/stub/*.c) # Stub sources
-file(GLOB_RECURSE XASH_ENGINE_ANDROID_SOURCES platform/android/*.c) # Android sources
-file(GLOB_RECURSE XASH_ENGINE_CLIENT_SOURCES  client/*.c) # Client sources
+# Поиск файлов в папке engine/ и её подпапках
+file(GLOB_RECURSE XASH_ENGINE_SOURCES         engine/common/*.c engine/server/*.c ) # Minimal sources
+file(GLOB_RECURSE XASH_ENGINE_WIN32_SOURCES   game_launch/game.rc engine/platform/win32/*.c) # Win32 only sources
+file(GLOB_RECURSE XASH_ENGINE_SDL_SOURCES     engine/platform/sdl/*.c) # SDL version sources
+file(GLOB_RECURSE XASH_ENGINE_POSIX_SOURCES    engine/platform/posix/con_posix.c) # Posix sources
+file(GLOB_RECURSE XASH_ENGINE_STUB_SOURCES     engine/platform/stub/*.c) # Stub sources
+file(GLOB_RECURSE XASH_ENGINE_ANDROID_SOURCES engine/platform/android/*.c) # Android sources
+file(GLOB_RECURSE XASH_ENGINE_CLIENT_SOURCES  engine/client/*.c) # Client sources
 
 if(NOT WIN32 AND NOT APPLE)
 	find_package (Libunwind QUIET)
@@ -42,14 +43,14 @@ endif()
 if(LIBUNWIND_FOUND AND UNIX AND NOT APPLE)
 	message(STATUS "libunwind found")
 	include_directories(${LIBUNWIND_INCLUDE_DIRS})
-	list(APPEND XASH_ENGINE_POSIX_SOURCES platform/posix/crashhandler_libunwind.c)
+	list(APPEND XASH_ENGINE_POSIX_SOURCES engine/platform/posix/crashhandler_libunwind.c)
 elseif(UNIX)
 	message(STATUS "libunwind not found")
-	list(APPEND XASH_ENGINE_POSIX_SOURCES platform/posix/crashhandler.c)
+	list(APPEND XASH_ENGINE_POSIX_SOURCES engine/platform/posix/crashhandler.c)
 	set(LIBUNWIND_INCLUDE_DIR "")
 	set(LIBUNWIND_LIBRARIES "")
 elseif(NOT WIN32)
-#	file(GLOB XASH_ENGINE_POSIX_SOURCES platform/stub/crashhandler.c)
+#	file(GLOB XASH_ENGINE_POSIX_SOURCES engine/platform/stub/crashhandler.c)
 endif()
 
 cond_list_append(WIN32        XASH_ENGINE_SOURCES XASH_ENGINE_WIN32_SOURCES)
@@ -61,15 +62,15 @@ cond_list_append("NOT XASH_DEDICATED" XASH_ENGINE_SOURCES XASH_ENGINE_CLIENT_SOU
 
 include_directories(
         ${CMAKE_CURRENT_BINARY_DIR}
-	.
-	common/
-	common/imagelib/
-	common/soundlib/
-	client/
-	client/vgui/
-	server/
-	../common
-	../pm_shared
+	engine/
+	engine/common/
+	engine/common/imagelib/
+	engine/common/soundlib/
+	engine/client/
+	engine/client/vgui/
+	engine/server/
+	common
+	pm_shared
 )
 
 if(XASH_NANOGL)
@@ -116,6 +117,10 @@ if(XASH_SINGLE_BINARY) # Set executable or library
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 	endif()
 else()
+	# Проверка на наличие исходных файлов перед созданием библиотеки
+	if(NOT XASH_ENGINE_SOURCES)
+		message(FATAL_ERROR "No source files found for xash library. Check that GLOB patterns match your directory structure.")
+	endif()
 	add_library(${XASH_ENGINE} SHARED ${XASH_ENGINE_SOURCES})
 endif()
 
@@ -196,7 +201,7 @@ endif()
 if(XASH_DLL_LOADER)
 	add_definitions(-DDLL_LOADER)
 
-	include_directories(../loader)
+	include_directories(loader)
 
 	# See target_link_vgui_hack
 
