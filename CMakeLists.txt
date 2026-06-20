@@ -22,12 +22,8 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(XASH_ENGINE C)
 
-# Подключаем модуль FWGS с определениями макросов
-include(${CMAKE_CURRENT_LIST_DIR}/../cmake/FWGSLib.cmake)
-
 set(XASH_ENGINE xash) # Lib name
 
-fwgs_fix_default_msvc_settings()
 file(GLOB_RECURSE XASH_ENGINE_SOURCES         common/*.c server/*.c ) # Minimal sources
 file(GLOB_RECURSE XASH_ENGINE_WIN32_SOURCES   ../game_launch/game.rc platform/win32/*.c) # Win32 only sources
 file(GLOB_RECURSE XASH_ENGINE_SDL_SOURCES     platform/sdl/*.c) # SDL version sources
