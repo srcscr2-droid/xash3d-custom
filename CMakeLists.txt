@@ -22,6 +22,9 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(XASH_ENGINE C)
 
+# Include FWGS CMake utilities
+include(cmake/FWGSLib.cmake)
+
 set(XASH_ENGINE xash) # Lib name
 
 file(GLOB_RECURSE XASH_ENGINE_SOURCES         common/*.c server/*.c ) # Minimal sources
