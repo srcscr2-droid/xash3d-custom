@@ -1,4 +1,0 @@
-<project name="xash3d" default="debug">
-    <property name="sdk.dir" value="${env.ANDROID_HOME}"/>
-    <import file="${sdk.dir}/tools/ant/build.xml"/>
-</project>
