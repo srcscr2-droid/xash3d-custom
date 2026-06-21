@@ -1,3 +1,6 @@
 APP_ABI := armeabi-v7a arm64-v8a
 APP_PLATFORM := android-21
-APP_ALLOW_MISSING_DEPS := true
+APP_STL := c++_shared
+APP_CPPFLAGS := -std=c++11
+NDK_TOOLCHAIN_VERSION := 4.9
+
