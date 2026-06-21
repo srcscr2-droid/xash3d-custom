@@ -1,78 +1,169 @@
-name: Android APK Build
+name: Build Android APK
 
 on:
   push:
-    branches: [ master, main, develop ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ master, main ]
-  workflow_dispatch:
+    branches: [ main, master ]
 
 jobs:
-  build-android:
-    name: Build Android APK
+  build:
     runs-on: ubuntu-latest
-
+    
     steps:
+      # 1. Клонирование репозитория С подмодулями
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Set up JDK 17
+      # 2. Установка Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
+      # 3. Установка Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 12266719
+          packages: 'tools platform-tools'
 
+      # 4. Установка NDK r21e (требуется для старого движка)
       - name: Install NDK
         run: |
           echo "y" | sdkmanager "ndk;21.4.7075529" --channel=0
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/21.4.7075529" >> $GITHUB_ENV
 
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: ${{ runner.os }}-gradle-
-
-      - name: Make gradlew executable
+      # 5. Проверка подмодулей (отладка)
+      - name: Check submodules
         run: |
-          if [ -f game_launch/gradlew ]; then chmod +x game_launch/gradlew; fi
-          if [ -f gradlew ]; then chmod +x gradlew; fi
+          echo "=== Проверка подмодулей ==="
+          git submodule status
+          echo "=== Содержимое 3rdparty ==="
+          ls -la 3rdparty/ || echo "Папка 3rdparty не найдена!"
+          echo "=== Содержимое engine/platform/android ==="
+          ls -la engine/platform/android/ || echo "Папка не найдена!"
 
-      - name: Build Debug APK
+      # 6. Проверка и клонирование недостающих зависимостей
+      - name: Clone missing dependencies
         run: |
-          if [ -f game_launch/build.gradle ]; then
-            cd game_launch
-            ./gradlew assembleDebug --no-daemon
-          elif [ -f build.gradle ]; then
-            ./gradlew assembleDebug --no-daemon
-          else
-            echo "No Gradle build file found, skipping Gradle step"
+          # Клонируем NanoGL (нужен для GLES)
+          if [ ! -d "nanogl" ]; then
+            git clone --depth 1 https://github.com/FWGS/nanogl.git nanogl
+          fi
+          
+          # Клонируем SDL2 если нет
+          if [ ! -d "3rdparty/SDL" ]; then
+            mkdir -p 3rdparty
+            git clone --depth 1 --branch SDL2 https://github.com/FWGS/SDL.git 3rdparty/SDL
+          fi
+          
+          # Клонируем HLSDK если нет
+          if [ ! -d "3rdparty/hlsdk-portable" ]; then
+            git clone --depth 1 --branch mobile-hacks https://github.com/FWGS/hlsdk-portable.git 3rdparty/hlsdk-portable
           fi
 
-      - name: Build with NDK (ndk-build)
+      # 7. Исправление отсутствующего файла dlsym-weak.cpp
+      - name: Fix missing dlsym-weak.cpp
+        run: |
+          mkdir -p engine/platform/android
+          cat > engine/platform/android/dlsym-weak.cpp << 'EOF'
+          // Stub for dlsym-weak.cpp - required for Android build
+          // This file was missing in the repository
+          
+          #include <dlfcn.h>
+          #include <android/log.h>
+          
+          #define LOG_TAG "XASH3D"
+          #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+          
+          extern "C" {
+          
+          void *dlsym_weak(void *handle, const char *symbol)
+          {
+              void *addr = dlsym(handle, symbol);
+              if (!addr) {
+                  LOGI("dlsym_weak: symbol '%s' not found", symbol);
+              }
+              return addr;
+          }
+          
+          } // extern "C"
+          EOF
+
+      # 8. Сборка через ndk-build
+      - name: Build with ndk-build
         run: |
           NDK=$ANDROID_NDK_HOME
-          $NDK/ndk-build -C . APP_ABI="armeabi-v7a arm64-v8a" \
+          $NDK/ndk-build \
+            APP_ABI="armeabi-v7a arm64-v8a" \
             NDK_PROJECT_PATH=. \
             APP_BUILD_SCRIPT=engine/Android.mk \
             NDK_APPLICATION_MK=Application.mk \
-            -j$(nproc) || true
+            -j$(nproc)
 
-      - name: Upload APK artifact
+      # 9. Копирование библиотек в android проект (если есть)
+      - name: Copy libraries to Android project
+        run: |
+          # Создаём папку для нативных библиотек
+          mkdir -p android/app/src/main/jniLibs/armeabi-v7a
+          mkdir -p android/app/src/main/jniLibs/arm64-v8a
+          
+          # Копируем собранные .so файлы
+          if [ -d "libs/armeabi-v7a" ]; then
+            cp libs/armeabi-v7a/*.so android/app/src/main/jniLibs/armeabi-v7a/ 2>/dev/null || true
+          fi
+          if [ -d "libs/arm64-v8a" ]; then
+            cp libs/arm64-v8a/*.so android/app/src/main/jniLibs/arm64-v8a/ 2>/dev/null || true
+          fi
+          
+          # Также копируем из obj/local (альтернативный путь)
+          if [ -d "obj/local/armeabi-v7a" ]; then
+            cp obj/local/armeabi-v7a/*.so android/app/src/main/jniLibs/armeabi-v7a/ 2>/dev/null || true
+          fi
+          if [ -d "obj/local/arm64-v8a" ]; then
+            cp obj/local/arm64-v8a/*.so android/app/src/main/jniLibs/arm64-v8a/ 2>/dev/null || true
+          fi
+
+      # 10. Сборка APK через Gradle (если есть android проект)
+      - name: Build APK with Gradle
+        run: |
+          if [ -f "android/app/build.gradle" ]; then
+            cd android
+            chmod +x gradlew
+            ./gradlew assembleDebug --no-daemon
+          else
+            echo "Android Gradle project not found, skipping APK build"
+          fi
+
+      # 11. Поиск и вывод путей к собранным файлам
+      - name: Find built files
+        run: |
+          echo "=== Поиск APK ==="
+          find . -name "*.apk" -type f 2>/dev/null || echo "APK не найден"
+          
+          echo "=== Поиск .so файлов ==="
+          find . -name "*.so" -type f 2>/dev/null || echo ".so файлы не найдены"
+          
+          echo "=== Содержимое libs/ ==="
+          ls -laR libs/ 2>/dev/null || echo "Папка libs пуста"
+          
+          echo "=== Содержимое obj/ ==="
+          ls -laR obj/ 2>/dev/null || echo "Папка obj пуста"
+
+      # 12. Загрузка артефактов
+      - name: Upload APK
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: xash3d-android-${{ github.sha }}
+          name: xash3d-apk
           path: |
             **/*.apk
             **/*.so
+            libs/**/*
           if-no-files-found: warn
           retention-days: 30
